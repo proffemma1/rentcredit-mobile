@@ -41,7 +41,7 @@
             "compileSdkVersion": 33,
             "targetSdkVersion": 33,
             "buildToolsVersion": "33.0.0"
-          },
+          },"deploymentTarget": "13.4"
           "ios": {
             "deploymentTarget": "11.0"
           }
