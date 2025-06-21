@@ -1,0 +1,23 @@
+{
+  "cli": {
+    "version": ">= 5.9.0"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"  
+    },
+    "preview": {
+      "distribution": "internal"
+    },
+    "production": {
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://79e92539-d3bf-46fb-bf4e-4baa34dbcb9e-00-2z7yi01croc8e.picard.replit.dev"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}
