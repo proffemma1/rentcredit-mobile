@@ -1,28 +1,21 @@
 {
   "cli": {
-    "version": ">= 5.9.0"
+    "version": ">= 5.2.0"
   },
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal",
-      "cache": {
-        "disabled": true
-      }
+      "distribution": "internal"
     },
     "preview": {
       "distribution": "internal",
-      "cache": {
-        "disabled": true
+      "android": {
+        "buildType": "apk"
       }
     },
     "production": {
-      "autoIncrement": true,
-      "cache": {
-        "disabled": true
-      },
-      "env": {
-        "EXPO_PUBLIC_API_URL": "https://79e92539-d3bf-46fb-bf4e-4baa34dbcb9e-00-2z7yi01croc8e.picard.replit.dev"
+      "android": {
+        "buildType": "apk"
       }
     }
   },
