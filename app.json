@@ -4,56 +4,19 @@
     "slug": "rentcredit",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./generated-icon.png",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "light",
     "splash": {
-      "image": "./generated-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#6366f1"
     },
-    "updates": {
-      "fallbackToCacheTimeout": 0
-    },
-    "runtimeVersion": "1.0.0",
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.rentcredit.app",
-      "buildNumber": "1.0.0",
-      "deploymentTarget": "13.4"
+      "bundleIdentifier": "com.rentcredit.app"
     },
     "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./generated-icon.png",
-        "backgroundColor": "#ffffff"
-      },
-      "package": "com.rentcredit.app",
-      "versionCode": 1
+      "package": "com.rentcredit.app"
     },
-    "web": {
-      "favicon": "./generated-icon.png",
-      "bundler": "webpack",
-      "output": "single"
-    },
-    "scheme": "rentcredit",
-    "platforms": ["ios", "android", "web"],
-    "plugins": [
-      [
-        "expo-build-properties",
-        {
-          "android": {
-            "compileSdkVersion": 33,
-            "targetSdkVersion": 33,
-            "buildToolsVersion": "33.0.0"
-          },
-          "ios": {
-            "deploymentTarget": "13.4"
-          }
-        }
-      ]
-    ],
     "extra": {
       "eas": {
         "projectId": "5bea90ca-6c23-4b58-8b81-56ccbbac9aff"
