@@ -1,18 +1,43 @@
 {
   "cli": {
-    "version": ">= 5.2.0"
+    "version": ">= 5.9.0"
   },
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "cache": {
+        "disabled": true
+      },
+      "android": {
+        "buildType": "apk"
+      },
+      "ios": {
+        "buildType": "simulator"
+      }
     },
     "preview": {
-      "distribution": "internal"
+      "distribution": "internal",
+      "cache": {
+        "disabled": true
+      },
+      "android": {
+        "buildType": "apk"
+      },
+      "ios": {
+        "buildType": "archive"
+      }
     },
     "production": {
+      "autoIncrement": true,
+      "cache": {
+        "disabled": true
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://rentcredit.us"
+      },
       "android": {
-        "buildType": "aab"
+        "buildType": "apk"
       },
       "ios": {
         "buildType": "archive"
