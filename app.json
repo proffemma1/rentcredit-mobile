@@ -4,7 +4,7 @@
     "slug": "rentcredit", 
     "version": "1.0.1",
     "owner": "proffemma1",
-    "projectId": "6c059b47-81c1-4c33-b116-d14045b26408",
+    "projectId": "07383db8-2eea-4159-8fdd-b288e554e71c",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "description": "Build credit through verified rent payments. Connect with landlords, track payments, and improve your credit score with every on-time rent payment.",
@@ -27,7 +27,7 @@
     "platforms": ["ios", "android", "web"],
     "extra": {
       "eas": {
-        "projectId": "6c059b47-81c1-4c33-b116-d14045b26408"
+        "projectId": "07383db8-2eea-4159-8fdd-b288e554e71c",
       }
     }
   }
