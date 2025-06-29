@@ -3,17 +3,11 @@ workflows:
     name: RentCredit iOS
     max_build_duration: 120
     instance_type: mac_mini_m1
-    integrations:
-      app_store_connect: codemagic
     environment:
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.rentcredit.app
       vars:
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
         BUNDLE_ID: "com.rentcredit.app"
-        APP_STORE_APPLE_ID: 1234567890 # Replace with your App Store ID
       node: v18.17.0
       npm: 9
       xcode: latest
@@ -29,44 +23,27 @@ workflows:
         script: |
           npx cap copy ios
           npx cap update ios
-      - name: Set up code signing settings on Xcode project
+      - name: Build iOS app for testing
         script: |
-          xcode-project use-profiles
-      - name: Increment build number
-        script: |
-          cd ios/App && agvtool new-version -all $(($(app-store-connect get-latest-app-store-build-number "$APP_STORE_APPLE_ID") + 1))
-      - name: Build ipa for distribution
-        script: |
-          xcode-project build-ipa \
-            --workspace "$XCODE_WORKSPACE" \
-            --scheme "$XCODE_SCHEME"
+          cd ios/App && xcodebuild -workspace App.xcworkspace -scheme App -configuration Release -destination generic/platform=iOS CODE_SIGNING_ALLOWED=NO
     artifacts:
-      - build/ios/ipa/*.ipa
+      - ios/App/build/Release-iphoneos/*.app
       - /tmp/xcodebuild_logs/*.log
-      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.app
-      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
     publishing:
       email:
         recipients:
-          - user@example.com # Replace with your email
+          - user@example.com
         notify:
           success: true
           failure: false
-      app_store_connect:
-        auth: integration
-        submit_to_testflight: false
-        submit_to_app_store: true
 
   ionic-capacitor-android-workflow:
     name: RentCredit Android
     max_build_duration: 120
     instance_type: linux_x2
     environment:
-      android_signing:
-        - keystore_reference
       vars:
         PACKAGE_NAME: "com.rentcredit.app"
-        GOOGLE_PLAY_TRACK: "internal"
       node: v18.17.0
       npm: 9
       java: 11
@@ -81,23 +58,15 @@ workflows:
       - name: Set Android SDK location
         script: |
           echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/android/local.properties"
-      - name: Build Android release
+      - name: Build Android APK for testing
         script: |
-          cd android && ./gradlew assembleRelease
-      - name: Build Android App Bundle
-        script: |
-          cd android && ./gradlew bundleRelease
+          cd android && ./gradlew assembleDebug
     artifacts:
       - android/app/build/outputs/**/*.apk
-      - android/app/build/outputs/**/*.aab
     publishing:
       email:
         recipients:
-          - user@example.com # Replace with your email
+          - user@example.com
         notify:
           success: true
-          failure: false
-      google_play:
-        credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
-        track: $GOOGLE_PLAY_TRACK
-        submit_as_draft: true
+          failure: false 
