@@ -22,17 +22,22 @@ jobs:
     - name: Install dependencies
       run: npm install
       
-    - name: Build web app
+    - name: Build web app for mobile
       run: npm run build
       
+    - name: Create mobile web directory
+      run: |
+        mkdir -p mobile-dist
+        cp -r dist/* mobile-dist/
+        
     - name: Setup Capacitor
       run: |
-        npx cap init "RentCredit" "com.rentcredit.app" --web-dir=dist
+        npx cap init "RentCredit" "com.rentcredit.app" --web-dir=mobile-dist
         
     - name: Add iOS platform
       run: npx cap add ios
       
-    - name: Sync web assets
+    - name: Sync web assets to iOS
       run: npx cap sync ios
       
     - name: Install CocoaPods dependencies
@@ -47,11 +52,11 @@ jobs:
                    -scheme App \
                    -configuration Debug \
                    -destination generic/platform=iOS \
+                   CODE_SIGNING_ALLOWED=NO \
                    -archivePath App.xcarchive \
-                   archive \
-                   CODE_SIGNING_ALLOWED=NO
+                   archive
         
-    - name: Export iOS App
+    - name: Export iOS App for distribution
       run: |
         cd ios/App
         mkdir -p build/Debug-iphoneos
@@ -86,23 +91,30 @@ jobs:
     - name: Install dependencies
       run: npm install
       
-    - name: Build web app
+    - name: Build web app for mobile
       run: npm run build
       
+    - name: Create mobile web directory
+      run: |
+        mkdir -p mobile-dist
+        cp -r dist/* mobile-dist/
+        
     - name: Setup Capacitor
       run: |
-        npx cap init "RentCredit" "com.rentcredit.app" --web-dir=dist
+        npx cap init "RentCredit" "com.rentcredit.app" --web-dir=mobile-dist
         
     - name: Add Android platform
       run: npx cap add android
       
-    - name: Sync web assets
+    - name: Sync web assets to Android
       run: npx cap sync android
+      
+    - name: Make gradlew executable
+      run: chmod +x android/gradlew
       
     - name: Build Android APK
       run: |
         cd android
-        chmod +x ./gradlew
         ./gradlew assembleDebug
         
     - name: Build Android Bundle (AAB)
