@@ -1,19 +1,19 @@
 {
-  "name": "rentcredit-mobile", 
-  "version": "1.0.0",
-  "main": "App.js",
+  "name": "rentcredit-mobile-app",
+  "version": "1.0.0", 
+  "type": "module",
+  "license": "MIT",
   "scripts": {
-    "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios" 
+    "build": "cap build",
+    "sync": "cap sync",
+    "copy": "cap copy",
+    "open:ios": "cap open ios",
+    "open:android": "cap open android"
   },
   "dependencies": {
-    "expo": "~52.0.0",
-    "expo-status-bar": "~2.0.0", 
-    "react": "18.3.1",
-    "react-native": "0.76.1"
-  },
-  "devDependencies": {
-    "@babel/core": "^7.25.2"
+    "@capacitor/android": "^7.4.0",
+    "@capacitor/cli": "^7.4.0", 
+    "@capacitor/core": "^7.4.0",
+    "@capacitor/ios": "^7.4.0"
   }
 }
