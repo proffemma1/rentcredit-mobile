@@ -1,72 +1,24 @@
 workflows:
-  ionic-capacitor-ios-workflow:
+  capacitor-ios-workflow:
     name: RentCredit iOS
-    max_build_duration: 120
+    max_build_duration: 60
     instance_type: mac_mini_m1
     environment:
       vars:
-        XCODE_WORKSPACE: "ios/App/App.xcworkspace"
-        XCODE_SCHEME: "App"
         BUNDLE_ID: "com.rentcredit.app"
-      node: v18.17.0
-      npm: 9
+      node: 18
       xcode: latest
       cocoapods: default
     scripts:
-      - name: Install npm dependencies
+      - name: Install dependencies
         script: |
-          npm ci
-      - name: Install CocoaPods dependencies
+          npm install
+      - name: Setup Capacitor
         script: |
-          cd ios/App && pod install
-      - name: Update dependencies and copy web assets to native project
-        script: |
+          npx cap add ios
           npx cap copy ios
-          npx cap update ios
-      - name: Build iOS app for testing
+      - name: Build iOS (unsigned)
         script: |
-          cd ios/App && xcodebuild -workspace App.xcworkspace -scheme App -configuration Release -destination generic/platform=iOS CODE_SIGNING_ALLOWED=NO
+          xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Debug -destination generic/platform=iOS CODE_SIGNING_ALLOWED=NO
     artifacts:
-      - ios/App/build/Release-iphoneos/*.app
-      - /tmp/xcodebuild_logs/*.log
-    publishing:
-      email:
-        recipients:
-          - user@example.com
-        notify:
-          success: true
-          failure: false
-
-  ionic-capacitor-android-workflow:
-    name: RentCredit Android
-    max_build_duration: 120
-    instance_type: linux_x2
-    environment:
-      vars:
-        PACKAGE_NAME: "com.rentcredit.app"
-      node: v18.17.0
-      npm: 9
-      java: 11
-    scripts:
-      - name: Install npm dependencies
-        script: |
-          npm ci
-      - name: Update dependencies and copy web assets to native project
-        script: |
-          npx cap copy android
-          npx cap update android
-      - name: Set Android SDK location
-        script: |
-          echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/android/local.properties"
-      - name: Build Android APK for testing
-        script: |
-          cd android && ./gradlew assembleDebug
-    artifacts:
-      - android/app/build/outputs/**/*.apk
-    publishing:
-      email:
-        recipients:
-          - user@example.com
-        notify:
-          success: true
-          failure: false 
+      - ios/App/build/Debug-iphoneos/*.app
