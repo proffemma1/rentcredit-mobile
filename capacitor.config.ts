@@ -3,7 +3,7 @@ import { CapacitorConfig } from '@capacitor/cli';
 const config: CapacitorConfig = {
   appId: 'com.rentcredit.app',
   appName: 'RentCredit',
-  webDir: 'www',
+  webDir: 'build',
   server: {
     androidScheme: 'https'
   }
