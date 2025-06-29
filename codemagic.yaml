@@ -13,19 +13,24 @@ workflows:
       - name: Install dependencies
         script: |
           npm install
-      - name: Setup Capacitor iOS
+      - name: Initialize Capacitor project
+        script: |
+          npx cap init "RentCredit" "com.rentcredit.app" --web-dir=www
+      - name: Add iOS platform
         script: |
           npx cap add ios
+      - name: Copy web assets and sync
+        script: |
           npx cap copy ios
-      - name: Install CocoaPods
+          npx cap sync ios
+      - name: Install CocoaPods dependencies
         script: |
           cd ios/App && pod install
-      - name: Build iOS (unsigned)
+      - name: Build iOS app (unsigned)
         script: |
           cd ios/App && xcodebuild -workspace App.xcworkspace -scheme App -configuration Debug -destination generic/platform=iOS CODE_SIGNING_ALLOWED=NO
     artifacts:
       - ios/App/build/Debug-iphoneos/*.app
-      - ios/App/build/**/*.ipa
 
   ionic-capacitor-android-workflow:
     name: RentCredit Android
@@ -40,11 +45,17 @@ workflows:
       - name: Install dependencies
         script: |
           npm install
-      - name: Setup Capacitor Android
+      - name: Initialize Capacitor project
+        script: |
+          npx cap init "RentCredit" "com.rentcredit.app" --web-dir=www
+      - name: Add Android platform
         script: |
           npx cap add android
+      - name: Copy web assets and sync
+        script: |
           npx cap copy android
-      - name: Set Android SDK
+          npx cap sync android
+      - name: Set Android SDK location
         script: |
           echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/android/local.properties"
       - name: Build Android APK
