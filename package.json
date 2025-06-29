@@ -3,9 +3,7 @@
   "version": "1.0.0",
   "description": "RentCredit Mobile App",
   "scripts": {
-    "build": "mkdir -p build && cp -r www/* build/",
-    "copy": "npx cap copy",
-    "sync": "npx cap sync"
+    "build": "mkdir -p build && cp -r www/* build/"
   },
   "dependencies": {
     "@capacitor/core": "^5.0.0",
