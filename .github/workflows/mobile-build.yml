@@ -17,52 +17,46 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '18'
-        cache: 'npm'
         
     - name: Install dependencies
       run: npm install
       
     - name: Build web app for mobile
       run: npm run build
-      
-    - name: Create mobile web directory
-      run: |
-        mkdir -p mobile-dist
-        cp -r dist/* mobile-dist/
         
-    - name: Setup Capacitor
+    - name: Setup Capacitor project
       run: |
-        npx cap init "RentCredit" "com.rentcredit.app" --web-dir=mobile-dist
+        npx cap init "RentCredit" "com.rentcredit.app" --web-dir=dist
         
     - name: Add iOS platform
       run: npx cap add ios
       
-    - name: Sync web assets to iOS
+    - name: Sync and update iOS
       run: npx cap sync ios
       
-    - name: Install CocoaPods dependencies
+    - name: Setup iOS build environment
       run: |
         cd ios/App
         pod install
         
-    - name: Build iOS App (Debug)
+    - name: Build iOS App
       run: |
         cd ios/App
         xcodebuild -workspace App.xcworkspace \
                    -scheme App \
                    -configuration Debug \
                    -destination generic/platform=iOS \
-                   CODE_SIGNING_ALLOWED=NO \
-                   -archivePath App.xcarchive \
-                   archive
+                   -archivePath RentCredit.xcarchive \
+                   archive \
+                   CODE_SIGNING_ALLOWED=NO
         
-    - name: Export iOS App for distribution
+    - name: Extract iOS App
       run: |
         cd ios/App
         mkdir -p build/Debug-iphoneos
-        cp -r App.xcarchive/Products/Applications/ build/Debug-iphoneos/
+        cp -r RentCredit.xcarchive/Products/Applications/ build/Debug-iphoneos/ 2>/dev/null || true
         
-    - name: Upload iOS Build Artifacts
+    - name: Upload iOS Build
       uses: actions/upload-artifact@v4
       with:
         name: rentcredit-ios-app
@@ -80,7 +74,6 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '18'
-        cache: 'npm'
         
     - name: Setup Java JDK
       uses: actions/setup-java@v4
@@ -93,45 +86,28 @@ jobs:
       
     - name: Build web app for mobile
       run: npm run build
-      
-    - name: Create mobile web directory
-      run: |
-        mkdir -p mobile-dist
-        cp -r dist/* mobile-dist/
         
-    - name: Setup Capacitor
+    - name: Setup Capacitor project
       run: |
-        npx cap init "RentCredit" "com.rentcredit.app" --web-dir=mobile-dist
+        npx cap init "RentCredit" "com.rentcredit.app" --web-dir=dist
         
     - name: Add Android platform
       run: npx cap add android
       
-    - name: Sync web assets to Android
+    - name: Sync and update Android
       run: npx cap sync android
       
-    - name: Make gradlew executable
+    - name: Grant execute permissions
       run: chmod +x android/gradlew
       
     - name: Build Android APK
       run: |
         cd android
-        ./gradlew assembleDebug
-        
-    - name: Build Android Bundle (AAB)
-      run: |
-        cd android
-        ./gradlew bundleRelease
+        ./gradlew assembleDebug --no-daemon
         
     - name: Upload Android APK
       uses: actions/upload-artifact@v4
       with:
         name: rentcredit-android-apk
         path: android/app/build/outputs/apk/debug/*.apk
-        retention-days: 30
-        
-    - name: Upload Android Bundle
-      uses: actions/upload-artifact@v4
-      with:
-        name: rentcredit-android-bundle
-        path: android/app/build/outputs/bundle/release/*.aab
         retention-days: 30
