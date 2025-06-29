@@ -1,26 +1,39 @@
 workflows:
-  ionic-capacitor-ios-workflow:
+  rentcredit-ios:
     name: RentCredit iOS
-    max_build_duration: 60
+    max_build_duration: 120
     instance_type: mac_mini_m1
     environment:
       vars:
         BUNDLE_ID: "com.rentcredit.app"
+        APP_NAME: "RentCredit"
       node: 18
       xcode: latest
       cocoapods: default
     scripts:
       - name: Install dependencies
-        script: npm install
+        script: |
+          npm install
       - name: Build web app
-        script: npm run build
+        script: |
+          npm run build
+      - name: Verify build output
+        script: |
+          ls -la build/
+          cat build/index.html | head -20
+      - name: Initialize Capacitor project
+        script: |
+          npx cap init "RentCredit" "com.rentcredit.app" --web-dir=build
       - name: Add iOS platform
-        script: npx cap add ios
-      - name: Copy web assets to iOS
-        script: npx cap copy ios
-      - name: Install CocoaPods dependencies
-        script: cd ios/App && pod install
-      - name: Build iOS app (unsigned)
+        script: |
+          npx cap add ios
+      - name: Copy web assets
+        script: |
+          npx cap copy ios
+      - name: Install CocoaPods
+        script: |
+          cd ios/App && pod install
+      - name: Build iOS (unsigned)
         script: |
           cd ios/App && xcodebuild -workspace App.xcworkspace -scheme App -configuration Debug -destination generic/platform=iOS CODE_SIGNING_ALLOWED=NO
     artifacts:
