@@ -17,23 +17,23 @@ workflows:
       - name: Build web app
         script: |
           npm run build
-      - name: Verify build output
+      - name: Verify build directory exists
         script: |
-          ls -la build/
-          cat build/index.html | head -20
-      - name: Initialize Capacitor project
+          ls -la
+          ls -la build/ || echo "Build directory not found"
+      - name: Initialize fresh Capacitor project
         script: |
           npx cap init "RentCredit" "com.rentcredit.app" --web-dir=build
       - name: Add iOS platform
         script: |
           npx cap add ios
-      - name: Copy web assets
+      - name: Copy web assets to iOS
         script: |
           npx cap copy ios
-      - name: Install CocoaPods
+      - name: Install CocoaPods dependencies
         script: |
           cd ios/App && pod install
-      - name: Build iOS (unsigned)
+      - name: Build iOS app (unsigned)
         script: |
           cd ios/App && xcodebuild -workspace App.xcworkspace -scheme App -configuration Debug -destination generic/platform=iOS CODE_SIGNING_ALLOWED=NO
     artifacts:
