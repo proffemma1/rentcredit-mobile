@@ -1,34 +1,20 @@
 {
-  "expo": {
-    "name": "RentCredit",
-    "slug": "rentcredit", 
-    "version": "1.0.1",
-    "owner": "proffemma1",
-    "projectId": "07383db8-2eea-4159-8fdd-b288e554e71",
-    "orientation": "portrait",
-    "userInterfaceStyle": "automatic",
-    "description": "Build credit through verified rent payments. Connect with landlords, track payments, and improve your credit score with every on-time rent payment.",
-    "keywords": ["rent", "credit", "payments", "landlord", "tenant", "credit score", "financial"],
-    "splash": {
-      "resizeMode": "contain",
-      "backgroundColor": "#6366f1"
-    },
-    "privacy": "public",
-    "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.rentcredit.app",
-      "buildNumber": "1.0.0",
-      "deploymentTarget": "13.4"
-    },
-    "android": {
-      "package": "com.rentcredit.app",
-      "versionCode": 1
-    },
-    "platforms": ["ios", "android", "web"],
-    "extra": {
-      "eas": {
-        "projectId": "07383db8-2eea-4159-8fdd-b288e554e71",
-      }
-    }
+  "name": "RentCredit",
+  "slug": "rentcredit",
+  "version": "1.0.0",
+  "orientation": "portrait",
+  "icon": "./icon-512.png",
+  "splash": {
+    "image": "./icon-512.png",
+    "resizeMode": "contain",
+    "backgroundColor": "#8B5CF6"
+  },
+  "ios": {
+    "bundleIdentifier": "com.rentcredit.app",
+    "buildNumber": "1"
+  },
+  "android": {
+    "package": "com.rentcredit.app",
+    "versionCode": 1
   }
 }
