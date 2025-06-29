@@ -1,7 +1,7 @@
 workflows:
   ionic-capacitor-ios-workflow:
     name: RentCredit iOS
-    max_build_duration: 60
+    max_build_duration: 120
     instance_type: mac_mini_m1
     environment:
       vars:
@@ -11,47 +11,17 @@ workflows:
       cocoapods: default
     scripts:
       - name: Install dependencies
-        script: |
-          npm install
+        script: npm install
+      - name: Build React app
+        script: npm run build
       - name: Add iOS platform
-        script: |
-          npx cap add ios
+        script: npx cap add ios
       - name: Copy web assets to iOS
-        script: |
-          npx cap copy ios
+        script: npx cap copy ios
       - name: Install CocoaPods dependencies
-        script: |
-          cd ios/App && pod install
+        script: cd ios/App && pod install
       - name: Build iOS app (unsigned)
         script: |
           cd ios/App && xcodebuild -workspace App.xcworkspace -scheme App -configuration Debug -destination generic/platform=iOS CODE_SIGNING_ALLOWED=NO
     artifacts:
       - ios/App/build/Debug-iphoneos/*.app
-
-  ionic-capacitor-android-workflow:
-    name: RentCredit Android
-    max_build_duration: 60
-    instance_type: linux_x2
-    environment:
-      vars:
-        PACKAGE_NAME: "com.rentcredit.app"
-      node: 18
-      java: 11
-    scripts:
-      - name: Install dependencies
-        script: |
-          npm install
-      - name: Add Android platform
-        script: |
-          npx cap add android
-      - name: Copy web assets to Android
-        script: |
-          npx cap copy android
-      - name: Set Android SDK location
-        script: |
-          echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/android/local.properties"
-      - name: Build Android APK
-        script: |
-          cd android && ./gradlew assembleDebug
-    artifacts:
-      - android/app/build/outputs/**/*.apk
