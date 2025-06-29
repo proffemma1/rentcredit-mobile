@@ -1,0 +1,86 @@
+workflows:
+  ionic-capacitor-ios-workflow:
+    name: RentCredit iOS
+    max_build_duration: 120
+    instance_type: mac_mini_m1
+    integrations:
+      app_store_connect: codemagic
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.rentcredit.app
+      vars:
+        XCODE_WORKSPACE: "ios/App/App.xcworkspace"
+        XCODE_SCHEME: "App"
+        BUNDLE_ID: "com.rentcredit.app"
+        APP_STORE_APPLE_ID: 1234567890
+      node: v18.17.0
+      npm: 9
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: Install npm dependencies
+        script: |
+          npm ci
+      - name: Install CocoaPods dependencies
+        script: |
+          cd ios/App && pod install
+      - name: Update dependencies and copy web assets to native project
+        script: |
+          npx cap copy ios
+          npx cap update ios
+      - name: Set up code signing settings on Xcode project
+        script: |
+          xcode-project use-profiles
+      - name: Build ipa for distribution
+        script: |
+          xcode-project build-ipa \
+            --workspace "$XCODE_WORKSPACE" \
+            --scheme "$XCODE_SCHEME"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: false
+        submit_to_app_store: true
+
+  ionic-capacitor-android-workflow:
+    name: RentCredit Android
+    max_build_duration: 120
+    instance_type: linux_x2
+    environment:
+      android_signing:
+        - keystore_reference
+      vars:
+        PACKAGE_NAME: "com.rentcredit.app"
+        GOOGLE_PLAY_TRACK: "internal"
+      node: v18.17.0
+      npm: 9
+      java: 11
+    scripts:
+      - name: Install npm dependencies
+        script: |
+          npm ci
+      - name: Update dependencies and copy web assets to native project
+        script: |
+          npx cap copy android
+          npx cap update android
+      - name: Set Android SDK location
+        script: |
+          echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/android/local.properties"
+      - name: Build Android release
+        script: |
+          cd android && ./gradlew assembleRelease
+      - name: Build Android App Bundle
+        script: |
+          cd android && ./gradlew bundleRelease
+    artifacts:
+      - android/app/build/outputs/**/*.apk
+      - android/app/build/outputs/**/*.aab
+    publishing:
+      google_play:
+        credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+        track: $GOOGLE_PLAY_TRACK
+        submit_as_draft: true
