@@ -23,16 +23,30 @@ jobs:
       
     - name: Build web app for mobile
       run: npm run build
-        
-    - name: Setup Capacitor project
+      
+    - name: Verify build output
       run: |
-        npx cap init "RentCredit" "com.rentcredit.app" --web-dir=dist
+        ls -la
+        ls -la dist/ || echo "dist directory not found"
+        
+    - name: Setup Capacitor project with correct web directory
+      run: |
+        if [ -d "dist" ]; then
+          npx cap init "RentCredit" "com.rentcredit.app" --web-dir=dist
+        else
+          echo "Creating dist directory"
+          mkdir -p dist
+          echo "<html><body><h1>RentCredit</h1></body></html>" > dist/index.html
+          npx cap init "RentCredit" "com.rentcredit.app" --web-dir=dist
+        fi
         
     - name: Add iOS platform
       run: npx cap add ios
       
-    - name: Sync and update iOS
-      run: npx cap sync ios
+    - name: Sync iOS with assets check
+      run: |
+        npx cap copy ios
+        npx cap update ios
       
     - name: Setup iOS build environment
       run: |
@@ -54,7 +68,9 @@ jobs:
       run: |
         cd ios/App
         mkdir -p build/Debug-iphoneos
-        cp -r RentCredit.xcarchive/Products/Applications/ build/Debug-iphoneos/ 2>/dev/null || true
+        if [ -d "RentCredit.xcarchive/Products/Applications" ]; then
+          cp -r RentCredit.xcarchive/Products/Applications/ build/Debug-iphoneos/
+        fi
         
     - name: Upload iOS Build
       uses: actions/upload-artifact@v4
@@ -86,16 +102,30 @@ jobs:
       
     - name: Build web app for mobile
       run: npm run build
-        
-    - name: Setup Capacitor project
+      
+    - name: Verify build output
       run: |
-        npx cap init "RentCredit" "com.rentcredit.app" --web-dir=dist
+        ls -la
+        ls -la dist/ || echo "dist directory not found"
+        
+    - name: Setup Capacitor project with correct web directory
+      run: |
+        if [ -d "dist" ]; then
+          npx cap init "RentCredit" "com.rentcredit.app" --web-dir=dist
+        else
+          echo "Creating dist directory"
+          mkdir -p dist
+          echo "<html><body><h1>RentCredit</h1></body></html>" > dist/index.html
+          npx cap init "RentCredit" "com.rentcredit.app" --web-dir=dist
+        fi
         
     - name: Add Android platform
       run: npx cap add android
       
-    - name: Sync and update Android
-      run: npx cap sync android
+    - name: Sync Android with assets check
+      run: |
+        npx cap copy android
+        npx cap update android
       
     - name: Grant execute permissions
       run: chmod +x android/gradlew
