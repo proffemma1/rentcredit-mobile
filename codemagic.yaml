@@ -13,7 +13,7 @@ workflows:
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
         BUNDLE_ID: "com.rentcredit.app"
-        APP_STORE_APPLE_ID: 1234567890
+        APP_STORE_APPLE_ID: 1234567890 # Replace with your App Store ID
       node: v18.17.0
       npm: 9
       xcode: latest
@@ -32,6 +32,9 @@ workflows:
       - name: Set up code signing settings on Xcode project
         script: |
           xcode-project use-profiles
+      - name: Increment build number
+        script: |
+          cd ios/App && agvtool new-version -all $(($(app-store-connect get-latest-app-store-build-number "$APP_STORE_APPLE_ID") + 1))
       - name: Build ipa for distribution
         script: |
           xcode-project build-ipa \
@@ -40,7 +43,15 @@ workflows:
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.app
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
     publishing:
+      email:
+        recipients:
+          - user@example.com # Replace with your email
+        notify:
+          success: true
+          failure: false
       app_store_connect:
         auth: integration
         submit_to_testflight: false
@@ -80,6 +91,12 @@ workflows:
       - android/app/build/outputs/**/*.apk
       - android/app/build/outputs/**/*.aab
     publishing:
+      email:
+        recipients:
+          - user@example.com # Replace with your email
+        notify:
+          success: true
+          failure: false
       google_play:
         credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
         track: $GOOGLE_PLAY_TRACK
