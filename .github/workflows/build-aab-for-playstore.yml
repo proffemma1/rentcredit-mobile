@@ -1,0 +1,237 @@
+name: Build AAB for Google Play Store
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: 'App version (e.g., 1.0.0)'
+        required: true
+        default: '1.0.0'
+
+jobs:
+  build-android-aab:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+        
+    - name: Create React Native Android project structure
+      run: |
+        # Create the RentCredit React Native Android app structure
+        mkdir -p rentcredit-android
+        cd rentcredit-android
+        
+        # Create package.json
+        cat > package.json << 'EOF'
+        {
+          "name": "RentCredit",
+          "version": "${{ github.event.inputs.release_version }}",
+          "private": true,
+          "scripts": {
+            "android": "react-native run-android",
+            "start": "react-native start"
+          },
+          "dependencies": {
+            "react": "18.2.0",
+            "react-native": "0.73.0",
+            "react-native-webview": "^13.6.3"
+          },
+          "devDependencies": {
+            "@babel/core": "^7.20.0",
+            "@babel/preset-env": "^7.20.0",
+            "@babel/runtime": "^7.20.0",
+            "@react-native/babel-preset": "^0.73.18",
+            "@react-native/metro-config": "^0.73.2",
+            "metro-react-native-babel-preset": "^0.73.7"
+          }
+        }
+        EOF
+        
+        # Install dependencies
+        npm install --legacy-peer-deps
+        
+        # Initialize React Native project structure
+        npx react-native init RentCreditApp --template react-native-template-typescript --skip-install --directory .
+        
+    - name: Configure Android project for AAB
+      run: |
+        cd rentcredit-android/android
+        
+        # Update app/build.gradle for AAB generation
+        cat > app/build.gradle << 'EOF'
+        apply plugin: "com.android.application"
+        apply plugin: "com.facebook.react"
+        
+        android {
+            namespace "com.rentcredit.app"
+            compileSdkVersion 34
+            buildToolsVersion "34.0.0"
+            
+            defaultConfig {
+                applicationId "com.rentcredit.app"
+                minSdkVersion 21
+                targetSdkVersion 34
+                versionCode 1
+                versionName "${{ github.event.inputs.release_version }}"
+            }
+            
+            signingConfigs {
+                release {
+                    storeFile file("release.keystore")
+                    storePassword "rentcredit2025"
+                    keyAlias "rentcredit"
+                    keyPassword "rentcredit2025"
+                }
+            }
+            
+            buildTypes {
+                release {
+                    minifyEnabled true
+                    proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
+                    signingConfig signingConfigs.release
+                }
+            }
+            
+            bundle {
+                language {
+                    enableSplit = true
+                }
+                density {
+                    enableSplit = true
+                }
+                abi {
+                    enableSplit = true
+                }
+            }
+        }
+        
+        dependencies {
+            implementation("com.facebook.react:react-android")
+            implementation("com.facebook.react:hermes-android")
+        }
+        EOF
+        
+    - name: Create React Native app with WebView
+      run: |
+        cd rentcredit-android
+        
+        # Create the main app component
+        mkdir -p src
+        cat > src/App.tsx << 'EOF'
+        import React from 'react';
+        import { SafeAreaView, StatusBar } from 'react-native';
+        import WebView from 'react-native-webview';
+
+        const App = () => {
+          return (
+            <SafeAreaView style={{ flex: 1 }}>
+              <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+              <WebView
+                source={{ uri: 'https://rentcredit.us' }}
+                style={{ flex: 1 }}
+                startInLoadingState={true}
+                javaScriptEnabled={true}
+                domStorageEnabled={true}
+                allowsInlineMediaPlayback={true}
+                mediaPlaybackRequiresUserAction={false}
+              />
+            </SafeAreaView>
+          );
+        };
+
+        export default App;
+        EOF
+        
+        # Update index.js
+        cat > index.js << 'EOF'
+        import { AppRegistry } from 'react-native';
+        import App from './src/App';
+        import { name as appName } from './app.json';
+
+        AppRegistry.registerComponent(appName, () => App);
+        EOF
+        
+        # Create app.json
+        cat > app.json << 'EOF'
+        {
+          "name": "RentCredit",
+          "displayName": "RentCredit"
+        }
+        EOF
+        
+    - name: Generate signing keystore
+      run: |
+        cd rentcredit-android/android/app
+        
+        # Generate a release keystore for signing
+        keytool -genkeypair -v \
+          -keystore release.keystore \
+          -alias rentcredit \
+          -keyalg RSA \
+          -keysize 2048 \
+          -validity 10000 \
+          -storepass rentcredit2025 \
+          -keypass rentcredit2025 \
+          -dname "CN=RentCredit, OU=Development, O=RentCredit, L=San Francisco, ST=CA, C=US"
+          
+    - name: Build AAB file
+      run: |
+        cd rentcredit-android/android
+        
+        # Clean and build the AAB
+        ./gradlew clean
+        ./gradlew bundleRelease
+        
+        # The AAB file will be in app/build/outputs/bundle/release/
+        ls -la app/build/outputs/bundle/release/
+        
+    - name: Upload AAB artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: rentcredit-${{ github.event.inputs.release_version }}.aab
+        path: rentcredit-android/android/app/build/outputs/bundle/release/app-release.aab
+        retention-days: 30
+        
+    - name: Generate upload instructions
+      run: |
+        echo "# Google Play Store Upload Instructions" > upload-instructions.md
+        echo "" >> upload-instructions.md
+        echo "## Your AAB file is ready! 🎉" >> upload-instructions.md
+        echo "" >> upload-instructions.md
+        echo "### File Details:" >> upload-instructions.md
+        echo "- **File Name**: app-release.aab" >> upload-instructions.md
+        echo "- **Version**: ${{ github.event.inputs.release_version }}" >> upload-instructions.md
+        echo "- **Package Name**: com.rentcredit.app" >> upload-instructions.md
+        echo "" >> upload-instructions.md
+        echo "### Upload Steps:" >> upload-instructions.md
+        echo "1. Download the AAB file from the artifacts section below" >> upload-instructions.md
+        echo "2. Go to [Google Play Console](https://play.google.com/console)" >> upload-instructions.md
+        echo "3. Select your RentCredit app" >> upload-instructions.md
+        echo "4. Go to **Release > Production** (or Testing)" >> upload-instructions.md
+        echo "5. Click **Create new release**" >> upload-instructions.md
+        echo "6. Upload the downloaded AAB file" >> upload-instructions.md
+        echo "7. Fill in release notes" >> upload-instructions.md
+        echo "8. Review and rollout" >> upload-instructions.md
+        echo "" >> upload-instructions.md
+        echo "### Signing Information:" >> upload-instructions.md
+        echo "The AAB is signed with a temporary keystore. For production:" >> upload-instructions.md
+        echo "- Use Google Play App Signing (recommended)" >> upload-instructions.md
+        echo "- Or provide your own keystore via GitHub secrets" >> upload-instructions.md
+        
+    - name: Upload instructions
+      uses: actions/upload-artifact@v4
+      with:
+        name: upload-instructions
+        path: upload-instructions.md
