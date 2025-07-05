@@ -1,4 +1,4 @@
-name: Build AAB for Google Play Store
+name: Build Mobile Apps (Android & iOS)
 
 on:
   workflow_dispatch:
@@ -10,6 +10,7 @@ on:
 
 jobs:
   build-android-aab:
+    name: Build Android AAB
     runs-on: ubuntu-latest
     
     steps:
@@ -27,11 +28,10 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
         
-    - name: Create React Native Android project structure
+    - name: Create React Native project
       run: |
-        # Create the RentCredit React Native Android app structure
-        mkdir -p rentcredit-android
-        cd rentcredit-android
+        mkdir -p mobile-app
+        cd mobile-app
         
         # Create package.json
         cat > package.json << 'EOF'
@@ -41,6 +41,7 @@ jobs:
           "private": true,
           "scripts": {
             "android": "react-native run-android",
+            "ios": "react-native run-ios",
             "start": "react-native start"
           },
           "dependencies": {
@@ -59,75 +60,12 @@ jobs:
         }
         EOF
         
-        # Install dependencies
         npm install --legacy-peer-deps
-        
-        # Initialize React Native project structure
         npx react-native init RentCreditApp --template react-native-template-typescript --skip-install --directory .
         
-    - name: Configure Android project for AAB
+    - name: Create app component
       run: |
-        cd rentcredit-android/android
-        
-        # Update app/build.gradle for AAB generation
-        cat > app/build.gradle << 'EOF'
-        apply plugin: "com.android.application"
-        apply plugin: "com.facebook.react"
-        
-        android {
-            namespace "com.rentcredit.app"
-            compileSdkVersion 34
-            buildToolsVersion "34.0.0"
-            
-            defaultConfig {
-                applicationId "com.rentcredit.app"
-                minSdkVersion 21
-                targetSdkVersion 34
-                versionCode 1
-                versionName "${{ github.event.inputs.release_version }}"
-            }
-            
-            signingConfigs {
-                release {
-                    storeFile file("release.keystore")
-                    storePassword "rentcredit2025"
-                    keyAlias "rentcredit"
-                    keyPassword "rentcredit2025"
-                }
-            }
-            
-            buildTypes {
-                release {
-                    minifyEnabled true
-                    proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
-                    signingConfig signingConfigs.release
-                }
-            }
-            
-            bundle {
-                language {
-                    enableSplit = true
-                }
-                density {
-                    enableSplit = true
-                }
-                abi {
-                    enableSplit = true
-                }
-            }
-        }
-        
-        dependencies {
-            implementation("com.facebook.react:react-android")
-            implementation("com.facebook.react:hermes-android")
-        }
-        EOF
-        
-    - name: Create React Native app with WebView
-      run: |
-        cd rentcredit-android
-        
-        # Create the main app component
+        cd mobile-app
         mkdir -p src
         cat > src/App.tsx << 'EOF'
         import React from 'react';
@@ -154,81 +92,236 @@ jobs:
         export default App;
         EOF
         
-        # Update index.js
-        cat > index.js << 'EOF'
-        import { AppRegistry } from 'react-native';
-        import App from './src/App';
-        import { name as appName } from './app.json';
-
-        AppRegistry.registerComponent(appName, () => App);
-        EOF
+    - name: Configure Android
+      run: |
+        cd mobile-app/android
         
-        # Create app.json
-        cat > app.json << 'EOF'
-        {
-          "name": "RentCredit",
-          "displayName": "RentCredit"
+        # Update app/build.gradle
+        cat > app/build.gradle << 'EOF'
+        apply plugin: "com.android.application"
+        apply plugin: "com.facebook.react"
+        
+        android {
+            namespace "com.rentcredit.app"
+            compileSdkVersion 34
+            
+            defaultConfig {
+                applicationId "com.rentcredit.app"
+                minSdkVersion 21
+                targetSdkVersion 34
+                versionCode 1
+                versionName "${{ github.event.inputs.release_version }}"
+            }
+            
+            signingConfigs {
+                release {
+                    storeFile file("release.keystore")
+                    storePassword "rentcredit2025"
+                    keyAlias "rentcredit"
+                    keyPassword "rentcredit2025"
+                }
+            }
+            
+            buildTypes {
+                release {
+                    minifyEnabled true
+                    signingConfig signingConfigs.release
+                }
+            }
+            
+            bundle {
+                language { enableSplit = true }
+                density { enableSplit = true }
+                abi { enableSplit = true }
+            }
+        }
+        
+        dependencies {
+            implementation("com.facebook.react:react-android")
+            implementation("com.facebook.react:hermes-android")
         }
         EOF
         
-    - name: Generate signing keystore
+    - name: Generate Android keystore
       run: |
-        cd rentcredit-android/android/app
-        
-        # Generate a release keystore for signing
+        cd mobile-app/android/app
         keytool -genkeypair -v \
           -keystore release.keystore \
           -alias rentcredit \
-          -keyalg RSA \
-          -keysize 2048 \
-          -validity 10000 \
-          -storepass rentcredit2025 \
-          -keypass rentcredit2025 \
+          -keyalg RSA -keysize 2048 -validity 10000 \
+          -storepass rentcredit2025 -keypass rentcredit2025 \
           -dname "CN=RentCredit, OU=Development, O=RentCredit, L=San Francisco, ST=CA, C=US"
           
-    - name: Build AAB file
+    - name: Build Android AAB
       run: |
-        cd rentcredit-android/android
+        cd mobile-app/android
+        ./gradlew clean bundleRelease
         
-        # Clean and build the AAB
-        ./gradlew clean
-        ./gradlew bundleRelease
-        
-        # The AAB file will be in app/build/outputs/bundle/release/
-        ls -la app/build/outputs/bundle/release/
-        
-    - name: Upload AAB artifact
+    - name: Upload Android AAB
       uses: actions/upload-artifact@v4
       with:
-        name: rentcredit-${{ github.event.inputs.release_version }}.aab
-        path: rentcredit-android/android/app/build/outputs/bundle/release/app-release.aab
+        name: RentCredit-${{ github.event.inputs.release_version }}-Android.aab
+        path: mobile-app/android/app/build/outputs/bundle/release/app-release.aab
+        retention-days: 30
+
+  build-ios-ipa:
+    name: Build iOS IPA
+    runs-on: macos-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        
+    - name: Install CocoaPods
+      run: |
+        sudo gem install cocoapods
+        
+    - name: Create React Native project
+      run: |
+        mkdir -p mobile-app
+        cd mobile-app
+        
+        # Create package.json
+        cat > package.json << 'EOF'
+        {
+          "name": "RentCredit",
+          "version": "${{ github.event.inputs.release_version }}",
+          "private": true,
+          "scripts": {
+            "ios": "react-native run-ios",
+            "start": "react-native start"
+          },
+          "dependencies": {
+            "react": "18.2.0",
+            "react-native": "0.73.0",
+            "react-native-webview": "^13.6.3"
+          }
+        }
+        EOF
+        
+        npm install --legacy-peer-deps
+        npx react-native init RentCreditApp --template react-native-template-typescript --skip-install --directory .
+        
+    - name: Configure iOS
+      run: |
+        cd mobile-app/ios
+        
+        # Update Info.plist
+        cat > RentCreditApp/Info.plist << 'EOF'
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        <plist version="1.0">
+        <dict>
+          <key>CFBundleDevelopmentRegion</key>
+          <string>en</string>
+          <key>CFBundleDisplayName</key>
+          <string>RentCredit</string>
+          <key>CFBundleExecutable</key>
+          <string>$(EXECUTABLE_NAME)</string>
+          <key>CFBundleIdentifier</key>
+          <string>com.rentcredit.app</string>
+          <key>CFBundleInfoDictionaryVersion</key>
+          <string>6.0</string>
+          <key>CFBundleName</key>
+          <string>$(PRODUCT_NAME)</string>
+          <key>CFBundlePackageType</key>
+          <string>APPL</string>
+          <key>CFBundleShortVersionString</key>
+          <string>${{ github.event.inputs.release_version }}</string>
+          <key>CFBundleSignature</key>
+          <string>????</string>
+          <key>CFBundleVersion</key>
+          <string>1</string>
+          <key>LSRequiresIPhoneOS</key>
+          <true/>
+          <key>NSAppTransportSecurity</key>
+          <dict>
+            <key>NSAllowsArbitraryLoads</key>
+            <true/>
+          </dict>
+          <key>UILaunchStoryboardName</key>
+          <string>LaunchScreen</string>
+          <key>UIRequiredDeviceCapabilities</key>
+          <array>
+            <string>armv7</string>
+          </array>
+          <key>UISupportedInterfaceOrientations</key>
+          <array>
+            <string>UIInterfaceOrientationPortrait</string>
+            <string>UIInterfaceOrientationLandscapeLeft</string>
+            <string>UIInterfaceOrientationLandscapeRight</string>
+          </array>
+        </dict>
+        </plist>
+        EOF
+        
+        pod install
+        
+    - name: Build iOS IPA
+      run: |
+        cd mobile-app/ios
+        
+        # Build the app
+        xcodebuild -workspace RentCreditApp.xcworkspace \
+          -scheme RentCreditApp \
+          -configuration Release \
+          -derivedDataPath build \
+          -allowProvisioningUpdates \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGNING_ALLOWED=NO
+          
+        # Create IPA
+        mkdir -p Payload
+        cp -r build/Build/Products/Release-iphoneos/RentCreditApp.app Payload/
+        zip -r RentCredit.ipa Payload
+        
+    - name: Upload iOS IPA
+      uses: actions/upload-artifact@v4
+      with:
+        name: RentCredit-${{ github.event.inputs.release_version }}-iOS.ipa
+        path: mobile-app/ios/RentCredit.ipa
         retention-days: 30
         
-    - name: Generate upload instructions
+  upload-instructions:
+    name: Generate Instructions
+    runs-on: ubuntu-latest
+    needs: [build-android-aab, build-ios-ipa]
+    
+    steps:
+    - name: Create upload instructions
       run: |
-        echo "# Google Play Store Upload Instructions" > upload-instructions.md
-        echo "" >> upload-instructions.md
-        echo "## Your AAB file is ready! 🎉" >> upload-instructions.md
-        echo "" >> upload-instructions.md
-        echo "### File Details:" >> upload-instructions.md
-        echo "- **File Name**: app-release.aab" >> upload-instructions.md
-        echo "- **Version**: ${{ github.event.inputs.release_version }}" >> upload-instructions.md
-        echo "- **Package Name**: com.rentcredit.app" >> upload-instructions.md
-        echo "" >> upload-instructions.md
-        echo "### Upload Steps:" >> upload-instructions.md
-        echo "1. Download the AAB file from the artifacts section below" >> upload-instructions.md
-        echo "2. Go to [Google Play Console](https://play.google.com/console)" >> upload-instructions.md
-        echo "3. Select your RentCredit app" >> upload-instructions.md
-        echo "4. Go to **Release > Production** (or Testing)" >> upload-instructions.md
-        echo "5. Click **Create new release**" >> upload-instructions.md
-        echo "6. Upload the downloaded AAB file" >> upload-instructions.md
-        echo "7. Fill in release notes" >> upload-instructions.md
-        echo "8. Review and rollout" >> upload-instructions.md
-        echo "" >> upload-instructions.md
-        echo "### Signing Information:" >> upload-instructions.md
-        echo "The AAB is signed with a temporary keystore. For production:" >> upload-instructions.md
-        echo "- Use Google Play App Signing (recommended)" >> upload-instructions.md
-        echo "- Or provide your own keystore via GitHub secrets" >> upload-instructions.md
+        cat > upload-instructions.md << 'EOF'
+        # App Store Upload Instructions
+        
+        ## Android - Google Play Store
+        
+        1. Download: RentCredit-${{ github.event.inputs.release_version }}-Android.aab
+        2. Go to [Google Play Console](https://play.google.com/console)
+        3. Select your app → Release → Production
+        4. Create new release → Upload AAB
+        5. Fill release notes → Review → Rollout
+        
+        ## iOS - Apple App Store
+        
+        1. Download: RentCredit-${{ github.event.inputs.release_version }}-iOS.ipa
+        2. Open Xcode → Window → Organizer
+        3. Or use [Transporter app](https://apps.apple.com/app/transporter/id1450874784)
+        4. Upload IPA to App Store Connect
+        5. Go to [App Store Connect](https://appstoreconnect.apple.com)
+        6. Select app → TestFlight or App Store → Submit
+        
+        ## Important Notes
+        
+        - Android: AAB is signed with temporary keystore
+        - iOS: IPA is unsigned (requires proper certificates for App Store)
+        - Both apps load: https://rentcredit.us
+        EOF
         
     - name: Upload instructions
       uses: actions/upload-artifact@v4
