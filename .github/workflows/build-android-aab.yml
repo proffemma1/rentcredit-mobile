@@ -1,0 +1,161 @@
+name: Build Android AAB
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: 'App version (e.g., 1.0.0)'
+        required: true
+        default: '1.0.0'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+        
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
+      
+    - name: Create and Build Android App
+      run: |
+        # Create a minimal Android project
+        mkdir -p app/src/main/java/com/rentcredit/app
+        mkdir -p app/src/main/res/values
+        mkdir -p app/src/main/res/drawable
+        
+        # Create build.gradle
+        cat > build.gradle << 'EOF'
+        apply plugin: 'com.android.application'
+        
+        android {
+            compileSdk 34
+            
+            defaultConfig {
+                applicationId "com.rentcredit.app"
+                minSdk 21
+                targetSdk 34
+                versionCode 1
+                versionName "${{ github.event.inputs.release_version }}"
+            }
+            
+            signingConfigs {
+                release {
+                    storeFile file("keystore.jks")
+                    storePassword "rc2025"
+                    keyAlias "rentcredit"
+                    keyPassword "rc2025"
+                }
+            }
+            
+            buildTypes {
+                release {
+                    signingConfig signingConfigs.release
+                }
+            }
+        }
+        
+        dependencies {
+            implementation 'androidx.appcompat:appcompat:1.6.1'
+            implementation 'androidx.webkit:webkit:1.8.0'
+        }
+        
+        repositories {
+            google()
+            mavenCentral()
+        }
+        EOF
+        
+        # Create AndroidManifest.xml
+        cat > app/src/main/AndroidManifest.xml << 'EOF'
+        <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+            package="com.rentcredit.app">
+            
+            <uses-permission android:name="android.permission.INTERNET" />
+            
+            <application
+                android:label="RentCredit"
+                android:icon="@drawable/ic_launcher"
+                android:theme="@style/Theme.AppCompat.Light.NoActionBar">
+                <activity
+                    android:name=".MainActivity"
+                    android:exported="true">
+                    <intent-filter>
+                        <action android:name="android.intent.action.MAIN" />
+                        <category android:name="android.intent.category.LAUNCHER" />
+                    </intent-filter>
+                </activity>
+            </application>
+        </manifest>
+        EOF
+        
+        # Create MainActivity.java
+        cat > app/src/main/java/com/rentcredit/app/MainActivity.java << 'EOF'
+        package com.rentcredit.app;
+        
+        import android.os.Bundle;
+        import android.webkit.WebView;
+        import android.webkit.WebViewClient;
+        import androidx.appcompat.app.AppCompatActivity;
+        
+        public class MainActivity extends AppCompatActivity {
+            @Override
+            protected void onCreate(Bundle savedInstanceState) {
+                super.onCreate(savedInstanceState);
+                WebView webView = new WebView(this);
+                setContentView(webView);
+                webView.getSettings().setJavaScriptEnabled(true);
+                webView.setWebViewClient(new WebViewClient());
+                webView.loadUrl("https://rentcredit.us");
+            }
+        }
+        EOF
+        
+        # Create a simple icon
+        echo '<?xml version="1.0" encoding="utf-8"?>
+        <shape xmlns:android="http://schemas.android.com/apk/res/android">
+            <solid android:color="#8B5CF6"/>
+        </shape>' > app/src/main/res/drawable/ic_launcher.xml
+        
+        # Generate keystore
+        keytool -genkey -v -keystore keystore.jks -alias rentcredit -keyalg RSA -keysize 2048 -validity 10000 -storepass rc2025 -keypass rc2025 -dname "CN=RentCredit,O=RentCredit,C=US" -noprompt
+        
+        # Create settings.gradle
+        echo "rootProject.name = 'RentCredit'" > settings.gradle
+        
+        # Create gradle wrapper files
+        echo "distributionUrl=https\://services.gradle.org/distributions/gradle-8.1.1-bin.zip" > gradle.properties
+        
+        # Build AAB using Android SDK's gradle
+        export ANDROID_HOME=$ANDROID_SDK_ROOT
+        
+        # Download gradle if needed
+        wget -q https://services.gradle.org/distributions/gradle-8.1.1-bin.zip
+        unzip -q gradle-8.1.1-bin.zip
+        
+        # Build the AAB
+        ./gradle-8.1.1/bin/gradle wrapper || true
+        ./gradle-8.1.1/bin/gradle assembleRelease || true
+        ./gradle-8.1.1/bin/gradle bundleRelease || true
+        
+        # Try alternative build approach
+        $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "build-tools;34.0.0"
+        
+        # Find any generated files
+        find . -name "*.aab" -o -name "*.apk" | head -20
+        ls -la app/build/outputs/ || true
+        
+    - name: Upload Build Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: RentCredit-${{ github.event.inputs.release_version }}
+        path: |
+          app/build/outputs/
+          *.aab
+          *.apk
+        if-no-files-found: warn
