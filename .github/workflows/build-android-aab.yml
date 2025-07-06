@@ -1,0 +1,305 @@
+name: Build Android AAB with Icons
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: 'App version (e.g., 1.0.0)'
+        required: true
+        default: '1.0.0'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Setup JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+    
+    - name: Create Complete Android Project
+      run: |
+        # Create project structure
+        mkdir -p RentCredit
+        cd RentCredit
+        
+        # Create directories
+        mkdir -p app/src/main/java/com/rentcredit/app
+        mkdir -p app/src/main/res/values
+        mkdir -p app/src/main/res/mipmap-hdpi
+        mkdir -p app/src/main/res/mipmap-mdpi
+        mkdir -p app/src/main/res/mipmap-xhdpi
+        mkdir -p app/src/main/res/mipmap-xxhdpi
+        mkdir -p app/src/main/res/mipmap-xxxhdpi
+        
+        # Create root build.gradle
+        cat > build.gradle << 'EOF'
+        buildscript {
+            repositories {
+                google()
+                mavenCentral()
+            }
+            dependencies {
+                classpath 'com.android.tools.build:gradle:8.1.1'
+            }
+        }
+        
+        allprojects {
+            repositories {
+                google()
+                mavenCentral()
+            }
+        }
+        
+        task clean(type: Delete) {
+            delete rootProject.buildDir
+        }
+        EOF
+        
+        # Create settings.gradle
+        echo 'rootProject.name = "RentCredit"' > settings.gradle
+        echo 'include ":app"' >> settings.gradle
+        
+        # Create gradle.properties
+        cat > gradle.properties << 'EOF'
+        org.gradle.jvmargs=-Xmx1536m
+        android.useAndroidX=true
+        android.enableJetifier=true
+        EOF
+        
+        # Create local.properties
+        echo "sdk.dir=/usr/local/lib/android/sdk" > local.properties
+        
+        # Create app/build.gradle
+        cat > app/build.gradle << 'EOF'
+        apply plugin: 'com.android.application'
+        
+        android {
+            namespace 'com.rentcredit.app'
+            compileSdk 34
+            
+            defaultConfig {
+                applicationId "com.rentcredit.app"
+                minSdk 21
+                targetSdk 34
+                versionCode 1
+                versionName "${{ github.event.inputs.release_version }}"
+            }
+            
+            signingConfigs {
+                release {
+                    storeFile file("../keystore.jks")
+                    storePassword "rentcredit2025"
+                    keyAlias "rentcredit"
+                    keyPassword "rentcredit2025"
+                }
+            }
+            
+            buildTypes {
+                release {
+                    minifyEnabled false
+                    signingConfig signingConfigs.release
+                }
+            }
+            
+            compileOptions {
+                sourceCompatibility JavaVersion.VERSION_1_8
+                targetCompatibility JavaVersion.VERSION_1_8
+            }
+        }
+        
+        dependencies {
+            implementation 'androidx.appcompat:appcompat:1.6.1'
+            implementation 'androidx.webkit:webkit:1.8.0'
+        }
+        EOF
+        
+        # Create MainActivity.java
+        cat > app/src/main/java/com/rentcredit/app/MainActivity.java << 'EOF'
+        package com.rentcredit.app;
+        
+        import android.os.Bundle;
+        import android.webkit.WebSettings;
+        import android.webkit.WebView;
+        import android.webkit.WebViewClient;
+        import androidx.appcompat.app.AppCompatActivity;
+        
+        public class MainActivity extends AppCompatActivity {
+            private WebView webView;
+            
+            @Override
+            protected void onCreate(Bundle savedInstanceState) {
+                super.onCreate(savedInstanceState);
+                
+                webView = new WebView(this);
+                setContentView(webView);
+                
+                WebSettings webSettings = webView.getSettings();
+                webSettings.setJavaScriptEnabled(true);
+                webSettings.setDomStorageEnabled(true);
+                webSettings.setLoadWithOverviewMode(true);
+                webSettings.setUseWideViewPort(true);
+                
+                webView.setWebViewClient(new WebViewClient());
+                webView.loadUrl("https://rentcredit.us");
+            }
+            
+            @Override
+            public void onBackPressed() {
+                if (webView.canGoBack()) {
+                    webView.goBack();
+                } else {
+                    super.onBackPressed();
+                }
+            }
+        }
+        EOF
+        
+        # Create AndroidManifest.xml
+        cat > app/src/main/AndroidManifest.xml << 'EOF'
+        <?xml version="1.0" encoding="utf-8"?>
+        <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+            
+            <uses-permission android:name="android.permission.INTERNET" />
+            <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+            
+            <application
+                android:allowBackup="true"
+                android:icon="@mipmap/ic_launcher"
+                android:label="RentCredit"
+                android:theme="@style/Theme.AppCompat.Light.NoActionBar"
+                android:usesCleartextTraffic="true">
+                <activity
+                    android:name=".MainActivity"
+                    android:exported="true">
+                    <intent-filter>
+                        <action android:name="android.intent.action.MAIN" />
+                        <category android:name="android.intent.category.LAUNCHER" />
+                    </intent-filter>
+                </activity>
+            </application>
+        </manifest>
+        EOF
+        
+        # Copy RentCredit icons from public folder
+        echo "Copying RentCredit app icons..."
+        
+        # Check if icons exist in the repo
+        if [ -f ../public/icon-192.png ]; then
+            echo "Found RentCredit icons in public folder"
+            
+            # Copy and resize icons for all Android densities
+            # Use ImageMagick to resize if available
+            if command -v convert &> /dev/null; then
+                convert ../public/icon-192.png -resize 48x48 app/src/main/res/mipmap-mdpi/ic_launcher.png
+                convert ../public/icon-192.png -resize 72x72 app/src/main/res/mipmap-hdpi/ic_launcher.png
+                convert ../public/icon-192.png -resize 96x96 app/src/main/res/mipmap-xhdpi/ic_launcher.png
+                convert ../public/icon-192.png -resize 144x144 app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+                cp ../public/icon-192.png app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+            else
+                # Fallback: copy the same icon to all sizes
+                cp ../public/icon-192.png app/src/main/res/mipmap-mdpi/ic_launcher.png
+                cp ../public/icon-192.png app/src/main/res/mipmap-hdpi/ic_launcher.png
+                cp ../public/icon-192.png app/src/main/res/mipmap-xhdpi/ic_launcher.png
+                cp ../public/icon-192.png app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+                cp ../public/icon-192.png app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+            fi
+        else
+            # Create a simple purple square icon as fallback
+            echo "Creating fallback icon..."
+            for dir in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
+                # Create a 1x1 purple PNG (very simple)
+                printf '\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\x0cIDATx\x9cc\xf8\x8b\\\xf6\x00\x00\x03\x95\x01T\xc0lk\xdb\x00\x00\x00\x00IEND\xaeB`\x82' > app/src/main/res/mipmap-${dir}/ic_launcher.png
+            done
+        fi
+        
+        # Generate keystore
+        keytool -genkeypair -v \
+          -keystore keystore.jks \
+          -alias rentcredit \
+          -keyalg RSA \
+          -keysize 2048 \
+          -validity 10000 \
+          -storepass rentcredit2025 \
+          -keypass rentcredit2025 \
+          -dname "CN=RentCredit, OU=Mobile, O=RentCredit, L=San Francisco, ST=CA, C=US"
+    
+    - name: Setup Gradle
+      run: |
+        cd RentCredit
+        
+        # Download gradle
+        wget -q https://services.gradle.org/distributions/gradle-8.1.1-all.zip
+        unzip -q gradle-8.1.1-all.zip
+        
+        # Create wrapper
+        gradle-8.1.1/bin/gradle wrapper
+        
+    - name: Build AAB
+      run: |
+        cd RentCredit
+        
+        # Make gradlew executable
+        chmod +x gradlew
+        
+        # Clean and build
+        ./gradlew clean
+        ./gradlew bundleRelease
+        
+        # Show what was built
+        echo "=== Build Complete ==="
+        echo "Finding AAB files..."
+        find . -name "*.aab" -type f
+        ls -la app/build/outputs/bundle/release/ || echo "Release bundle not found"
+        
+    - name: Upload AAB
+      uses: actions/upload-artifact@v4
+      with:
+        name: RentCredit-${{ github.event.inputs.release_version }}.aab
+        path: RentCredit/app/build/outputs/bundle/release/app-release.aab
+        
+    - name: Create Instructions
+      run: |
+        cat > GOOGLE_PLAY_UPLOAD.md << 'EOF'
+        # RentCredit Google Play Store Upload
+        
+        ## App Details
+        - **Package Name**: com.rentcredit.app
+        - **Version**: ${{ github.event.inputs.release_version }}
+        - **File**: RentCredit-${{ github.event.inputs.release_version }}.aab
+        
+        ## Upload Instructions
+        1. Download the AAB file from GitHub Actions artifacts
+        2. Go to [Google Play Console](https://play.google.com/console)
+        3. Create new app or select existing app
+        4. Navigate to **Release > Production**
+        5. Click **Create new release**
+        6. Upload the AAB file
+        
+        ## Store Listing Details
+        - **App name**: RentCredit
+        - **Short description**: Build credit with every rent payment
+        - **Full description**: 
+          RentCredit helps tenants build credit history by reporting rent payments to major credit bureaus. 
+          Connect with landlords, track payments, and improve your credit score.
+        - **Category**: Finance
+        - **Content rating**: Everyone
+        - **Contact email**: support@rentcredit.us
+        
+        ## First Time Setup
+        If creating a new app:
+        - Default language: English (United States)
+        - App type: App
+        - Free/Paid: Free
+        EOF
+        
+    - name: Upload Instructions
+      uses: actions/upload-artifact@v4
+      with:
+        name: upload-instructions
+        path: GOOGLE_PLAY_UPLOAD.md
