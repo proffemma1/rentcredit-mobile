@@ -1,4 +1,4 @@
-name: Build Android AAB with Icons
+name: Build Android AAB - Working Solution
 
 on:
   workflow_dispatch:
@@ -22,20 +22,62 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
     
-    - name: Create Complete Android Project
+    - name: Debug - Check repository structure
+      run: |
+        echo "=== Repository structure ==="
+        ls -la
+        echo "=== Public folder contents ==="
+        ls -la public/ || echo "No public folder found"
+        echo "=== Looking for icon files ==="
+        find . -name "icon*.png" -type f | head -20
+    
+    - name: Create Android Project with Icons
       run: |
         # Create project structure
-        mkdir -p RentCredit
-        cd RentCredit
+        mkdir -p android-app
+        cd android-app
         
-        # Create directories
+        # Create all necessary directories
         mkdir -p app/src/main/java/com/rentcredit/app
         mkdir -p app/src/main/res/values
-        mkdir -p app/src/main/res/mipmap-hdpi
+        mkdir -p app/src/main/res/drawable
         mkdir -p app/src/main/res/mipmap-mdpi
+        mkdir -p app/src/main/res/mipmap-hdpi
         mkdir -p app/src/main/res/mipmap-xhdpi
         mkdir -p app/src/main/res/mipmap-xxhdpi
         mkdir -p app/src/main/res/mipmap-xxxhdpi
+        
+        # Create the icons FIRST before anything else
+        echo "=== Creating app icons ==="
+        
+        # Method 1: Try to use existing icons from repository
+        if [ -f ../public/icon-192.png ]; then
+            echo "Found icon-192.png, copying to all resolutions..."
+            cp ../public/icon-192.png app/src/main/res/mipmap-mdpi/ic_launcher.png
+            cp ../public/icon-192.png app/src/main/res/mipmap-hdpi/ic_launcher.png
+            cp ../public/icon-192.png app/src/main/res/mipmap-xhdpi/ic_launcher.png
+            cp ../public/icon-192.png app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+            cp ../public/icon-192.png app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+            echo "Icons copied successfully"
+        else
+            echo "No existing icons found, creating new ones..."
+            
+            # Method 2: Create icons using base64 encoded PNG
+            # This is a small 48x48 purple square PNG encoded in base64
+            ICON_BASE64="/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAIBAQIBAQICAgICAgICAwUDAwMDAwYEBAMFBwYHBwcGBwcICQsJCAgKCAcHCg0KCgsMDAwMBwkODw0MDgsMDAz/2wBDAQICAgMDAwYDAwYMCAcIDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAz/wAARCAAwADADASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD5/ooooA+wP2T/ANkL9nv4r/s+6Frmu/C/wvqmrXqTefeTWAaWXbcSoMnPYKB+FfQX/DN/wI/6Jd4O/wDBAn+FfM/7AH7Ynw9+A/wC0nQ/FPiq00rVrWSeSSCWGZypM7spyhI5BBr6H/4bQ+BH/RUfB/8A4H/41jOlVlNtT/A9HD4jCQoxi6N2lrqzL/4Zv+BH/RLvB3/ggT/Cj/hm/wCBH/RLvB3/AIIE/wAK1P8AhtD4Ef8ARUfB/wD4H/40f8NofAj/AKKj4P8A/A//ABrP2VX/AJ/kdH1nCf8APj8WZf8Awzf8CP8Aol3g7/wQJ/hXzf8AtT/DT4e+Ff2h/Emm+GvBfhvRdMtjb+VbWWmxwxRZt4ycKoAGSTn8a+qP+G0PgR/0VHwf/wCB/wDjXw9+0j8T9D+K/wAaNa8Q6BqUOqaVeeT5VzCrqr7YY0bAYA8MpH4V0YenUjO8pX0OLG1aMqVo02nfrf8AI//Z"
+            
+            # Decode and save to all icon sizes
+            echo "$ICON_BASE64" | base64 -d > app/src/main/res/mipmap-mdpi/ic_launcher.png
+            echo "$ICON_BASE64" | base64 -d > app/src/main/res/mipmap-hdpi/ic_launcher.png
+            echo "$ICON_BASE64" | base64 -d > app/src/main/res/mipmap-xhdpi/ic_launcher.png
+            echo "$ICON_BASE64" | base64 -d > app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+            echo "$ICON_BASE64" | base64 -d > app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+            echo "Created fallback icons"
+        fi
+        
+        # Verify icons exist
+        echo "=== Verifying icon files ==="
+        ls -la app/src/main/res/mipmap-*/ic_launcher.png
         
         # Create root build.gradle
         cat > build.gradle << 'EOF'
@@ -144,6 +186,8 @@ jobs:
                 webSettings.setDomStorageEnabled(true);
                 webSettings.setLoadWithOverviewMode(true);
                 webSettings.setUseWideViewPort(true);
+                webSettings.setBuiltInZoomControls(true);
+                webSettings.setDisplayZoomControls(false);
                 
                 webView.setWebViewClient(new WebViewClient());
                 webView.loadUrl("https://rentcredit.us");
@@ -176,6 +220,7 @@ jobs:
                 android:usesCleartextTraffic="true">
                 <activity
                     android:name=".MainActivity"
+                    android:configChanges="orientation|screenSize"
                     android:exported="true">
                     <intent-filter>
                         <action android:name="android.intent.action.MAIN" />
@@ -186,37 +231,9 @@ jobs:
         </manifest>
         EOF
         
-        # Copy RentCredit icons from public folder
-        echo "Copying RentCredit app icons..."
-        
-        # Check if icons exist in the repo
-        if [ -f ../public/icon-192.png ]; then
-            echo "Found RentCredit icons in public folder"
-            
-            # Copy and resize icons for all Android densities
-            # Use ImageMagick to resize if available
-            if command -v convert &> /dev/null; then
-                convert ../public/icon-192.png -resize 48x48 app/src/main/res/mipmap-mdpi/ic_launcher.png
-                convert ../public/icon-192.png -resize 72x72 app/src/main/res/mipmap-hdpi/ic_launcher.png
-                convert ../public/icon-192.png -resize 96x96 app/src/main/res/mipmap-xhdpi/ic_launcher.png
-                convert ../public/icon-192.png -resize 144x144 app/src/main/res/mipmap-xxhdpi/ic_launcher.png
-                cp ../public/icon-192.png app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
-            else
-                # Fallback: copy the same icon to all sizes
-                cp ../public/icon-192.png app/src/main/res/mipmap-mdpi/ic_launcher.png
-                cp ../public/icon-192.png app/src/main/res/mipmap-hdpi/ic_launcher.png
-                cp ../public/icon-192.png app/src/main/res/mipmap-xhdpi/ic_launcher.png
-                cp ../public/icon-192.png app/src/main/res/mipmap-xxhdpi/ic_launcher.png
-                cp ../public/icon-192.png app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
-            fi
-        else
-            # Create a simple purple square icon as fallback
-            echo "Creating fallback icon..."
-            for dir in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
-                # Create a 1x1 purple PNG (very simple)
-                printf '\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\x0cIDATx\x9cc\xf8\x8b\\\xf6\x00\x00\x03\x95\x01T\xc0lk\xdb\x00\x00\x00\x00IEND\xaeB`\x82' > app/src/main/res/mipmap-${dir}/ic_launcher.png
-            done
-        fi
+        # Final icon verification
+        echo "=== Final icon check ==="
+        find app/src/main/res -name "*.png" -type f
         
         # Generate keystore
         keytool -genkeypair -v \
@@ -227,79 +244,144 @@ jobs:
           -validity 10000 \
           -storepass rentcredit2025 \
           -keypass rentcredit2025 \
-          -dname "CN=RentCredit, OU=Mobile, O=RentCredit, L=San Francisco, ST=CA, C=US"
+          -dname "CN=RentCredit, OU=Mobile, O=RentCredit, L=San Francisco, ST=CA, C=US" \
+          -noprompt
     
     - name: Setup Gradle
       run: |
-        cd RentCredit
+        cd android-app
         
-        # Download gradle
-        wget -q https://services.gradle.org/distributions/gradle-8.1.1-all.zip
-        unzip -q gradle-8.1.1-all.zip
+        # Download gradle wrapper
+        wget -q https://services.gradle.org/distributions/gradle-8.1.1-bin.zip
+        unzip -q gradle-8.1.1-bin.zip
         
-        # Create wrapper
-        gradle-8.1.1/bin/gradle wrapper
+        # Create gradle wrapper
+        mkdir -p gradle/wrapper
+        gradle-8.1.1/bin/gradle wrapper --gradle-version 8.1.1
         
     - name: Build AAB
       run: |
-        cd RentCredit
+        cd android-app
         
         # Make gradlew executable
         chmod +x gradlew
         
         # Clean and build
         ./gradlew clean
-        ./gradlew bundleRelease
+        ./gradlew bundleRelease --stacktrace
         
-        # Show what was built
+        # Show build results
         echo "=== Build Complete ==="
-        echo "Finding AAB files..."
         find . -name "*.aab" -type f
-        ls -la app/build/outputs/bundle/release/ || echo "Release bundle not found"
+        ls -la app/build/outputs/bundle/release/
         
     - name: Upload AAB
       uses: actions/upload-artifact@v4
       with:
         name: RentCredit-${{ github.event.inputs.release_version }}.aab
-        path: RentCredit/app/build/outputs/bundle/release/app-release.aab
+        path: android-app/app/build/outputs/bundle/release/app-release.aab
         
-    - name: Create Instructions
+    - name: Generate Upload Instructions
       run: |
-        cat > GOOGLE_PLAY_UPLOAD.md << 'EOF'
-        # RentCredit Google Play Store Upload
+        cat > PlayStore-Upload-Guide.md << 'EOF'
+        # RentCredit Google Play Store Upload Guide
         
-        ## App Details
+        ## App Bundle Details
+        - **File**: RentCredit-${{ github.event.inputs.release_version }}.aab
         - **Package Name**: com.rentcredit.app
         - **Version**: ${{ github.event.inputs.release_version }}
-        - **File**: RentCredit-${{ github.event.inputs.release_version }}.aab
+        - **Target**: Android 5.0+ (API 21)
         
-        ## Upload Instructions
-        1. Download the AAB file from GitHub Actions artifacts
-        2. Go to [Google Play Console](https://play.google.com/console)
-        3. Create new app or select existing app
-        4. Navigate to **Release > Production**
-        5. Click **Create new release**
-        6. Upload the AAB file
+        ## Step-by-Step Upload Instructions
         
-        ## Store Listing Details
-        - **App name**: RentCredit
-        - **Short description**: Build credit with every rent payment
-        - **Full description**: 
-          RentCredit helps tenants build credit history by reporting rent payments to major credit bureaus. 
-          Connect with landlords, track payments, and improve your credit score.
-        - **Category**: Finance
-        - **Content rating**: Everyone
-        - **Contact email**: support@rentcredit.us
+        ### 1. Download the AAB
+        - Click on the "RentCredit-${{ github.event.inputs.release_version }}.aab" artifact
+        - Download and extract the AAB file
         
-        ## First Time Setup
-        If creating a new app:
-        - Default language: English (United States)
-        - App type: App
-        - Free/Paid: Free
+        ### 2. Access Google Play Console
+        - Go to https://play.google.com/console
+        - Sign in with your developer account
+        
+        ### 3. Create New App (First Time)
+        - Click "Create app"
+        - App name: **RentCredit**
+        - Default language: **English (United States)**
+        - App or game: **App**
+        - Free or paid: **Free**
+        - Accept declarations and click "Create app"
+        
+        ### 4. App Store Listing
+        Fill in these required fields:
+        
+        **App details:**
+        - App name: RentCredit
+        - Short description: Build credit with every rent payment
+        - Full description:
+          ```
+          RentCredit transforms your monthly rent into credit-building opportunities. 
+          
+          Features:
+          • Report rent payments to major credit bureaus
+          • Connect with verified landlords
+          • Track payment history
+          • Monitor credit score improvements
+          • Secure document uploads
+          • Real-time payment verification
+          
+          Build your financial future, one rent payment at a time.
+          ```
+        
+        **Graphics:**
+        - App icon: Use the 512x512 icon from your assets
+        - Feature graphic: 1024x500 banner
+        - Screenshots: At least 2 phone screenshots
+        
+        **Categorization:**
+        - Application type: Apps
+        - Category: Finance
+        - Tags: credit building, rent payments, financial services
+        
+        **Contact details:**
+        - Email: support@rentcredit.us
+        - Website: https://rentcredit.us
+        
+        ### 5. Upload AAB
+        - Go to Release > Production
+        - Click "Create new release"
+        - Click "Upload" and select your AAB file
+        - Fill in release notes
+        - Click "Review release"
+        - Click "Start rollout to Production"
+        
+        ### 6. Content Rating
+        - Go to Policy > App content
+        - Start questionnaire
+        - Select: Financial Services
+        - Answer all questions
+        - Calculate rating
+        
+        ### 7. Pricing & Distribution
+        - Select countries for distribution
+        - Confirm app is free
+        - Complete all declarations
+        
+        ### 8. Submit for Review
+        - Review all sections for completion
+        - Submit app for review
+        - Review typically takes 2-3 hours
+        
+        ## Post-Submission
+        - Monitor your email for updates
+        - Check Play Console for review status
+        - Once approved, app will be live on Google Play Store
+        
+        ## Support
+        For issues, contact Google Play support or refer to:
+        https://support.google.com/googleplay/android-developer
         EOF
         
     - name: Upload Instructions
       uses: actions/upload-artifact@v4
       with:
-        name: upload-instructions
-        path: GOOGLE_PLAY_UPLOAD.md
+        name: PlayStore-Upload-Guide
+        path: PlayStore-Upload-Guide.md
